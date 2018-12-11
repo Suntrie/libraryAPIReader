@@ -112,7 +112,7 @@ public class CustomClassLoader extends ClassLoader {
         }
     }
 
-    private static JarEntry getNextJarEntryMatches(Enumeration<JarEntry> jarEntryEnumeration,
+    public static JarEntry getNextJarEntryMatches( Enumeration<JarEntry> jarEntryEnumeration,
                                                    String template) {
         JarEntry jarEntry = null;
 
@@ -137,7 +137,7 @@ public class CustomClassLoader extends ClassLoader {
      * */
     // first - set of loaded classes
     // second - set of missed classes
-    public Pair<Set<Class>, Set<String>> loadLibraryClassSet(String jarPath)
+    public Pair<Set<Class>, Set<String>> loadLibraryClassSet(String jarPath, Set<String> filterClassNames)
             throws IOException {
 
         Set<Class> loadedClasses = new HashSet<Class>();
@@ -156,6 +156,15 @@ public class CustomClassLoader extends ClassLoader {
                 break;
             }
 
+            boolean filter=false;
+
+            for(String filterClassName: filterClassNames) {
+                if (jarEntry.getName().matches(filterClassName))
+                    filter=true;
+            };
+
+            if (filter) continue;
+
             Class clazz = null;
 
             try {
@@ -163,6 +172,7 @@ public class CustomClassLoader extends ClassLoader {
                         loadClass(jarEntry.getName());  //sic - анонимные классы и вложенные интерфейсы будут давать null
             }catch (ClassNotFoundException | NoClassDefFoundError e){ // NoClassDefFoundError - класс был доступен при компиляции, но не доступен в runtime
                 missedClassNames.add(jarEntry.getName());             // например, потому что мы не грузим чужие опциональные зависимости
+
             }
 
             if (clazz!=null)
@@ -174,20 +184,20 @@ public class CustomClassLoader extends ClassLoader {
         return new Pair<>(loadedClasses, missedClassNames);
     }
 
-    public Set<String> getMissedClassNames(String jarPath) throws IOException {
-        return loadLibraryClassSet(jarPath).getSecond();
+    public Set<String> getMissedClassNames(String jarPath, Set<String> filterClassNames) throws IOException {
+        return loadLibraryClassSet(jarPath, filterClassNames).getSecond();
     }
 
-    public Triple<Set<Method>, Set<Class>, Set<Class>> getExecutableLibraryMethods(String jarPath)
+    public Triple<Set<Method>, Set<Class>, Set<Class>> getExecutableLibraryMethods(String jarPath,
+                                                                                   Set<String> filterClassNames)
             throws IOException {
 
         Set<Method> executableMethods = new HashSet<Method>();
 
-
         Set<Class> definedClasses=new HashSet<>();
         Set<Class> missedMethodDef=new HashSet<>();
 
-        for (Class libraryAPIClass : loadLibraryClassSet(jarPath).getFirst()) {
+        for (Class libraryAPIClass : loadLibraryClassSet(jarPath, filterClassNames).getFirst()) {
             if (!Modifier.isAbstract(libraryAPIClass.getModifiers())) {
                 try {
                     executableMethods.addAll(Arrays.stream(libraryAPIClass.getMethods())

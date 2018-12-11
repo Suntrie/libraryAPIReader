@@ -15,8 +15,8 @@ fun main(args: Array<String>) {
     val customClassLoader=CustomClassLoader();
 
     for (jarURL in jarURLs) {
-        customClassLoader.loadLibraryClassSet(jarURL.path)
-        customClassLoader.getExecutableLibraryMethods(jarURL.getPath())
+        customClassLoader.loadLibraryClassSet(jarURL.path, setOf());
+        customClassLoader.getExecutableLibraryMethods(jarURL.getPath(), setOf())
     }
 
 
