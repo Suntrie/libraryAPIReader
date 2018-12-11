@@ -9,7 +9,7 @@ fun main(args: Array<String>) {
     val jarURLs = ArrayList<URL>()
 
     jarURLs.add(URL("file:///"+
-            /*"/E:/testLib/out/artifacts/testLib_jar/testLib.jar"*/"/C:/Users/Neverland/.m2/repository/com/netflix/spectator/spectator-api/0.57.1/spectator-api-0.57.1.jar"))
+            /*"/E:/testLib/out/artifacts/testLib_jar/testLib.jar"*/"C:\\Users\\Neverland\\.m2\\repository\\com\\repoMiner\\fatInOutExploration\\extRoot\\1.0-SNAPSHOT\\extRoot-1.0-SNAPSHOT.jar"))
 
 
     val customClassLoader=CustomClassLoader();

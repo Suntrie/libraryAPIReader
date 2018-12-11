@@ -34,7 +34,13 @@ public class CustomClassLoader extends ClassLoader {
 
         if (name.contains("java.") || parentClassLoaderAccess) {
 
-            loadedClasses.put(pointedFQN, super.loadClass(pointedFQN, true));
+            try {
+
+                loadedClasses.put(pointedFQN, super.loadClass(pointedFQN, true));
+            }catch (ClassNotFoundException e){
+                parentClassLoaderAccess=false; // Сбрасываемся в дефолт для экзостивного поиска
+                throw e;
+            }
 
             if (parentClassLoaderAccess)
                 parentClassLoaderAccess = false;
