@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 public class CustomClassLoader extends ClassLoader {
 
-    private Set<JarFile> jarFiles=new HashSet<>();
+    private Set<JarFile> jarFiles = new HashSet<>();
 
     private JarFile currentlyLoadingJar;
 
@@ -37,8 +37,8 @@ public class CustomClassLoader extends ClassLoader {
             try {
 
                 loadedClasses.put(pointedFQN, super.loadClass(pointedFQN, true));
-            }catch (ClassNotFoundException e){
-                parentClassLoaderAccess=false; // Сбрасываемся в дефолт для экзостивного поиска
+            } catch (ClassNotFoundException e) {
+                parentClassLoaderAccess = false; // Сбрасываемся в дефолт для экзостивного поиска
                 throw e;
             }
 
@@ -118,8 +118,8 @@ public class CustomClassLoader extends ClassLoader {
         }
     }
 
-    public static JarEntry getNextJarEntryMatches( Enumeration<JarEntry> jarEntryEnumeration,
-                                                   String template) {
+    public static JarEntry getNextJarEntryMatches(Enumeration<JarEntry> jarEntryEnumeration,
+                                                  String template) {
         JarEntry jarEntry = null;
 
         while (true) {
@@ -162,12 +162,13 @@ public class CustomClassLoader extends ClassLoader {
                 break;
             }
 
-            boolean filter=false;
+            boolean filter = false;
 
-            for(String filterClassName: filterClassNames) {
+            for (String filterClassName : filterClassNames) {
                 if (jarEntry.getName().matches(filterClassName))
-                    filter=true;
-            };
+                    filter = true;
+            }
+            ;
 
             if (filter) continue;
 
@@ -176,12 +177,12 @@ public class CustomClassLoader extends ClassLoader {
             try {
                 clazz = this.
                         loadClass(jarEntry.getName());  //sic - анонимные классы и вложенные интерфейсы будут давать null
-            }catch (ClassNotFoundException | NoClassDefFoundError e){ // NoClassDefFoundError - класс был доступен при компиляции, но не доступен в runtime
+            } catch (ClassNotFoundException | NoClassDefFoundError e) { // NoClassDefFoundError - класс был доступен при компиляции, но не доступен в runtime
                 missedClassNames.add(jarEntry.getName());             // например, потому что мы не грузим чужие опциональные зависимости
 
             }
 
-            if (clazz!=null)
+            if (clazz != null)
                 loadedClasses.add(clazz);
         }
 
@@ -200,24 +201,36 @@ public class CustomClassLoader extends ClassLoader {
 
         Set<Method> executableMethods = new HashSet<Method>();
 
-        Set<Class> definedClasses=new HashSet<>();
-        Set<Class> missedMethodDef=new HashSet<>();
+        Set<Class> definedClasses = new HashSet<>();
+        Set<Class> missedMethodDef = new HashSet<>();
 
         for (Class libraryAPIClass : loadLibraryClassSet(jarPath, filterClassNames).getFirst()) {
-            if (!Modifier.isAbstract(libraryAPIClass.getModifiers())) {
-                try {
-                    executableMethods.addAll(Arrays.stream(libraryAPIClass.getMethods())
-                            .filter(it -> Modifier.isPublic(it.getModifiers())).collect(Collectors.toSet()));
-                    definedClasses.add(libraryAPIClass);
-                }catch (NoClassDefFoundError e){
-                    missedMethodDef.add(libraryAPIClass);
-                }
-            }
+
+            Set<Method> currentClassMethods= getClassExecutablePublicMethods(libraryAPIClass);
+
+            if (currentClassMethods==null)
+                missedMethodDef.add(libraryAPIClass);
+            else
+                definedClasses.add(libraryAPIClass);
         }
 
-        //executableMethods.stream().forEach(it-> System.out.println(it.getName()));
-
         return new Triple<>(executableMethods, definedClasses, missedMethodDef);
+    }
+
+
+    public Set<Method> getClassExecutablePublicMethods(Class libraryAPIClass) {
+        Set<Method> executableMethods = new HashSet<Method>();
+
+        if (!Modifier.isAbstract(libraryAPIClass.getModifiers())) {
+            try {
+                executableMethods.addAll(Arrays.stream(libraryAPIClass.getMethods())
+                        .filter(it -> Modifier.isPublic(it.getModifiers())).collect(Collectors.toSet()));
+            } catch (NoClassDefFoundError e) {
+                System.out.println("Class wasn't found");
+                return null;
+            }
+        }
+        return executableMethods;
     }
 
 }
